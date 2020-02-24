@@ -1,79 +1,140 @@
 // lyric info
-const songLyricsArray = "Don't want to be a fool for you, Just another player in your game for two, You may hate me but it ain't no lie, Baby bye bye bye, Bye bye, I Don't want to make it tough, I just want to tell you that I've had enough, It might sound crazy but it ain't no lie, Baby bye bye bye".split(', ');
+const songList = {
+  1: "Don't want to be a fool for you, Just another player in your game for two, You may hate me but it ain't no lie, Baby bye bye bye, Bye bye, I Don't want to make it tough, I just want to tell you that I've had enough, It might sound crazy but it ain't no lie, Baby bye bye bye".split(', '),
+  2: "Twenty-five years and my life is still, Trying to get up that great big hill of hope, For a destination, I realized quickly when I knew I should, That the world was made up of this brotherhood of man, For whatever that means, And so I cry sometimes when I'm lying in bed, Just to get it all out what's in my head, And I, I am feeling a little peculiar, And so I wake in the morning and I step outside, And I take a deep breath and I get real high, and I Scream from the top of my lungs, What's going on?, And I say hey yeah yeah hey yeah yeah, I said hey what's going on?, And I say hey yeah yeah hey yeah yeah,I said hey what's going on?".split(', ')
+};
 
 // initial redux store
 const initialState = {
-  songLyricsArray: songLyricsArray,
-  arrayPosition: 0,
+  currentSongId: null,
+  songsById: {
+    1: {
+      title: "Bye Bye Bye",
+      artist: "N'Sync",
+      songId: 1,
+      songArray: songList[1],
+      arrayPosition: 0,
+    },
+    2: {
+      title: "What's Goin' On",
+      artist: "Four Non-Blondes",
+      songId: 2,
+      songArray: songList[2],
+      arrayPosition: 0,
+    }
+  }
 }
 
 // reducer
-const reducer = (state = initialState, action) => {
-  let newState;
+const lyricChangeReducer = (state = initialState.songsById, action) => {
+  let newArrayPosition;
+  let newSongsByIdEntry;
+  let newSongsByIdStateSlice;
   switch(action.type) {
     case 'NEXT_LYRIC':
-      let newArrayPosition = state.arrayPosition + 1;
-      newState = {
-        songLyricsArray: state.songLyricsArray,
-        arrayPosition: newArrayPosition,
-      }
-      return newState;
+      newArrayPosition = state[action.currentSongId].arrayPosition + 1;
+      newSongsByIdEntry = Object.assign({}, state[action.currentSongId], {
+        arrayPosition: newArrayPosition
+      });
+      newSongsByIdStateSlice = Object.assign({}, state, {
+        [action.currentSongId]: newSongsByIdEntry
+      });
+      return newSongsByIdStateSlice;
     case 'RESTART_SONG':
-      newState = initialState;
-      return newState;
+      newSongsByIdEntry = Object.assign({}, state[action.currentSongId], {
+        arrayPosition: 0
+      });
+      newSongsByIdStateSlice = Object.assign({}, state, {
+        [action.currentSongId]: newSongsByIdEntry
+      });
+      return newSongsByIdStateSlice;
     default:
       return state;
   }
-  return state;
+}
+
+const songChangeReducer = (state = initialState.currentSongId, action) => {
+  switch (action.type) {
+    case 'CHANGE_SONG':
+      return action.newSelectedSongId;
+    default:
+      return state;
+  }
 }
 
 // jest tests + setup will go here
 const { expect } = window;
 
-expect(reducer(initialState, {type: null})).toEqual(initialState);
+expect(lyricChangeReducer(initialState.songsById, {type: null})).toEqual(initialState.songsById);
 
-expect(reducer(initialState, {type: 'NEXT_LYRIC'})).toEqual({
-  songLyricsArray: songLyricsArray,
-  arrayPosition: 1
+expect(lyricChangeReducer(initialState.songsById, {type: 'NEXT_LYRIC', currentSongId: 2})).toEqual({
+  1: {
+    title: "Bye Bye Bye",
+    artist: "N'Sync",
+    songId: 1,
+    songArray: songList[1],
+    arrayPosition: 0,
+  },
+  2: {
+    title: "What's Goin' On",
+    artist: "Four Non-Blondes",
+    songId: 2,
+    songArray: songList[2],
+    arrayPosition: 1,
+  }
 })
 
-expect(reducer({
-  songLyricsArray: songLyricsArray,
-  arrayPosition: 1,
-},
-{type: 'RESTART_SONG'})
-).toEqual(initialState);
+expect(lyricChangeReducer(initialState.songsById, {type: 'RESTART_SONG', currentSongId: 1})).toEqual({
+  1: {
+    title: "Bye Bye Bye",
+    artist: "N'Sync",
+    songId: 1,
+    songArray: songList[1],
+    arrayPosition: 0,
+  },
+  2: {
+    title: "What's Goin' On",
+    artist: "Four Non-Blondes",
+    songId: 2,
+    songArray: songList[2],
+    arrayPosition: 0,
+  }
+});
+
+expect(songChangeReducer(initialState, {type: null})).toEqual(initialState);
+
+expect(songChangeReducer(initialState.currentSongId, {type: 'CHANGE_SONG', newSelectedSongId: 1})).toEqual(1);
 
 // redux store
 const { createStore } = Redux;
-const store = createStore(reducer);
+const store = createStore(lyricChangeReducer);
 console.log(store.getState());
 
 // rendering state in DOM
-const renderLyrics = () => {
-  const lyricsDisplay = document.getElementById('lyrics');
-  while (lyricsDisplay.firstChild) {
-    lyricsDisplay.removeChild(lyricsDisplay.firstChild);
-  }
-  const currentLine = store.getState().songLyricsArray[store.getState().arrayPosition];
-  const renderedLine = document.createTextNode(currentLine);
-  document.getElementById('lyrics').appendChild(renderedLine);
-}
+// const renderLyrics = () => {
+//   const lyricsDisplay = document.getElementById('lyrics');
+//   while (lyricsDisplay.firstChild) {
+//     lyricsDisplay.removeChild(lyricsDisplay.firstChild);
+//   }
+//   const currentLine = store.getState().songLyricsArray[store.getState().arrayPosition];
+//   const renderedLine = document.createTextNode(currentLine);
+//   document.getElementById('lyrics').appendChild(renderedLine);
+// }
 
-window.onload = function() {
-  renderLyrics();
-}
+// window.onload = function() {
+//   renderLyrics();
+// }
 
 // click listener
-const userClick = () => {
-  const currentState = store.getState();
-  if (currentState.arrayPosition === currentState.songLyricsArray.length - 1) {
-    store.dispatch({type: 'RESTART_SONG'});
-  } else {
-    store.dispatch({type: 'NEXT_LYRIC'});
-  }
+// const userClick = () => {
+//   const currentState = store.getState();
+//   if (currentState.arrayPosition === currentState.songLyricsArray.length - 1) {
+//     store.dispatch({type: 'RESTART_SONG'});
+//   } else {
+//     store.dispatch({type: 'NEXT_LYRIC'});
+//   }
 
-}
+// }
 
 //subscribe to redux store
-store.subscribe(renderLyrics);
+// store.subscribe(renderLyrics);
